@@ -1,0 +1,15 @@
+# Binaries
+push_swap
+checker/checker
+
+# Object files
+*.o
+*.a
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*.swo
+*~
