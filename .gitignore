@@ -1,6 +1,6 @@
 # Binaries
 push_swap
-checker/checker
+checker
 
 # Object files
 *.o

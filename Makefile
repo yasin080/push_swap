@@ -1,45 +1,42 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: ybahri <ybahri@student.42.fr>              +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2024/05/01 18:18:08 by ybahri            #+#    #+#              #
-#    Updated: 2024/05/01 18:18:11 by ybahri           ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
+NAME		= push_swap
+BONUS		= checker
+CC			= cc
+CFLAGS		= -Wall -Wextra -Werror
+HEADER		= push_swap.h
 
-NAME = push_swap
-ARCHIVE = push_swap.a
-CC = gcc
-CFLAGS = -Wall -Werror -Wextra -g -O2
-MAKE_LIB = ar -rcs
+COMMON		= parse.c \
+			  stack.c \
+			  ops.c \
+			  ops_names.c
+SRCS		= main.c \
+			  sort_small.c \
+			  sort_large.c \
+			  cost.c
+BONUS_SRCS	= bonus/checker.c
 
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:.c=.o)
+COMMON_OBJS	= $(COMMON:.c=.o)
+OBJS		= $(SRCS:.c=.o)
+BONUS_OBJS	= $(BONUS_SRCS:.c=.o)
 
-all : $(NAME)
+all: $(NAME)
 
-$(NAME) : $(ARCHIVE)
-	$(CC) $< -o $@
+$(NAME): $(COMMON_OBJS) $(OBJS)
+	$(CC) $(CFLAGS) $^ -o $@
 
-$(ARCHIVE) : $(OBJS)
-	$(MAKE_LIB) $(ARCHIVE) $^
+bonus: $(BONUS)
 
-%.o : %.c
+$(BONUS): $(COMMON_OBJS) $(BONUS_OBJS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+%.o: %.c $(HEADER)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-bonus :
-	cd checker && make
+clean:
+	rm -f $(COMMON_OBJS) $(OBJS) $(BONUS_OBJS)
 
-clean :
-	rm -f $(OBJS) $(ARCHIVE)
+fclean: clean
+	rm -f $(NAME) $(BONUS)
 
-fclean : clean
-	rm -f $(NAME)
-	cd checker && make fclean
+re: fclean all
 
-re : fclean all
-
-.PHONY : all clean fclean re
+.PHONY: all bonus clean fclean re

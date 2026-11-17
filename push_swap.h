@@ -1,77 +1,69 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   push_swap.h                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: ybahri <ybahri@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/05/01 18:18:40 by ybahri            #+#    #+#             */
-/*   Updated: 2024/05/01 18:18:41 by ybahri           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef PUSH_SWAP_H
 # define PUSH_SWAP_H
 
-# include <stdlib.h>
 # include <limits.h>
 # include <stdbool.h>
+# include <stdlib.h>
 # include <unistd.h>
 
-typedef struct s_stack_node
+typedef enum e_op
 {
-	int					value;
-	int					current_position;
-	int					push_price;
-	bool				above_median;
-	bool				cheapest;
-	struct s_stack_node	*target_node;
-	struct s_stack_node	*next;
-	struct s_stack_node	*prev;
-}				t_stack_node;
+	OP_SA,
+	OP_SB,
+	OP_SS,
+	OP_PA,
+	OP_PB,
+	OP_RA,
+	OP_RB,
+	OP_RR,
+	OP_RRA,
+	OP_RRB,
+	OP_RRR
+}	t_op;
 
-//*** input ./push_swap "1 -67 56" ***
-char			**ft_split(char *str, char separator);
+/* v[0] is the top of the stack */
+typedef struct s_stack
+{
+	int	*v;
+	int	size;
+}	t_stack;
 
-//*** Errores y liberacion ***
-void			free_matrix(char **argv);
-void			error_free(t_stack_node **a, char **argv, bool flag_argc_2);
-void			free_stack(t_stack_node **stack);
-int				error_repetition(t_stack_node *a, int nbr);
-int				error_syntax(char *str_nbr);
+typedef struct s_ps
+{
+	t_stack	a;
+	t_stack	b;
+}	t_ps;
 
-//*** Creacion de stacks ***
-void			stack_init(t_stack_node **a, char **argv, bool flag_argc_2);
-void			init_nodes(t_stack_node *a, t_stack_node *b);
-void			ft_current_position(t_stack_node *stack);
-void			set_price(t_stack_node *a, t_stack_node *b);
-void			set_cheapest(t_stack_node *b);
+/* Rotations to apply: > 0 means ra/rb, < 0 means rra/rrb. */
+typedef struct s_move
+{
+	int	a;
+	int	b;
+	int	cost;
+}	t_move;
 
-//*** utilidades listas ***
-void			add_node(t_stack_node **stack, int nbr);
-t_stack_node	*find_last_node(t_stack_node *head);
-t_stack_node	*find_smallest(t_stack_node *stack);
-t_stack_node	*return_cheapest(t_stack_node *stack);
-bool			stack_sorted(t_stack_node *stack);
-int				stack_len(t_stack_node *stack);
-void			finish_rotation(t_stack_node **s, t_stack_node *n, char c);
+/* parse.c */
+int		*parse_args(int argc, char **argv, int *count);
 
-//*** Algoritmos ***
-void			tiny_sort(t_stack_node **a);
-void			handle_five(t_stack_node **a, t_stack_node **b);
-void			push_swap(t_stack_node **a, t_stack_node **b);
+/* stack.c */
+bool	load_input(t_ps *ps, int argc, char **argv);
+void	free_ps(t_ps *ps);
+bool	is_sorted(t_stack *s);
+int		min_index(t_stack *s);
+int		put_error(t_ps *ps);
 
-//*** Comandos ***
-void			sa(t_stack_node **a, bool checker);
-void			sb(t_stack_node **b, bool checker);
-void			ss(t_stack_node **a, t_stack_node **b, bool checker);
-void			ra(t_stack_node **a, bool checker);
-void			rb(t_stack_node **b, bool checker);
-void			rr(t_stack_node **a, t_stack_node **b, bool checker);
-void			rra(t_stack_node **a, bool checker);
-void			rrb(t_stack_node **b, bool checker);
-void			rrr(t_stack_node **a, t_stack_node **b, bool checker);
-void			pa(t_stack_node **a, t_stack_node **b, bool checker);
-void			pb(t_stack_node **b, t_stack_node **a, bool checker);
+/* ops.c / ops_names.c */
+void	apply_op(t_ps *ps, t_op op);
+void	do_op(t_ps *ps, t_op op);
+int		parse_op(const char *name);
+
+/* sort_small.c */
+void	sort_three(t_ps *ps);
+void	sort_small(t_ps *ps);
+void	rotate_a_to(t_ps *ps, int index);
+
+/* sort_large.c / cost.c */
+void	sort_large(t_ps *ps);
+t_move	best_move(t_ps *ps);
 
 #endif

@@ -1,117 +1,76 @@
 # push_swap
 
-A sorting algorithm project that arranges integers on a stack with the fewest operations possible, using only a restricted set of stack manipulations.
+42 project: sort a list of integers using two stacks and a small set of
+operations, printing as few operations as possible.
 
-## The Problem
+Stack `a` starts with the numbers, stack `b` is empty. Allowed operations:
 
-You have two stacks, **A** and **B**. Stack A starts with a random set of unsorted integers. Stack B is empty. The only allowed operations are:
-
-| Operation | Description |
-|-----------|-------------|
-| `sa` | Swap the first two elements of stack A |
-| `sb` | Swap the first two elements of stack B |
-| `ss` | `sa` and `sb` at the same time |
-| `pa` | Push the top element from B to A |
-| `pb` | Push the top element from A to B |
-| `ra` | Rotate stack A (top element goes to bottom) |
-| `rb` | Rotate stack B (top element goes to bottom) |
-| `rr` | `ra` and `rb` at the same time |
-| `rra` | Reverse rotate A (bottom element goes to top) |
-| `rrb` | Reverse rotate B (bottom element goes to top) |
-| `rrr` | `rra` and `rrb` at the same time |
-
-The goal: sort stack A in ascending order using the **minimum number of operations**.
-
-Scoring benchmark (42 evaluation):
-
-| Stack size | Max moves for full score |
-|------------|------------------------|
-| 3 | ≤ 3 |
-| 5 | ≤ 12 |
-| 100 | ≤ 700 |
-| 500 | ≤ 5500 |
-
-## Solution Approach
-
-- **2 elements**: A single `sa` if unsorted.
-- **3 elements**: A dedicated `tiny_sort` that identifies the highest value and rotates or swaps it into place — at most 2 operations.
-- **5 elements**: Push the 2 smallest elements to B, sort the remaining 3 with `tiny_sort`, then push back from B with cost-optimal rotations — at most 12 operations.
-- **5+ elements — Cost-optimization greedy algorithm**:
-  1. Push elements from A to B until only 3 remain in A.
-  2. Sort the 3 in A with `tiny_sort`.
-  3. For each element in B, calculate its **target position** in A and the **push price** (total rotations needed, accounting for combined `rr`/`rrr` optimizations).
-  4. Select the **cheapest** node and move it to A using the optimal combination of rotations.
-  5. Repeat until B is empty.
-  6. Rotate A until the smallest element is at the top.
-
-The key insight: by calculating the cost of every possible move and always choosing the cheapest, we minimize total operations. Combined rotations (`rr`, `rrr`) are used whenever both stacks need rotation in the same direction.
+| Op | Effect |
+|----|--------|
+| `sa` / `sb` / `ss` | swap the two top elements of a / b / both |
+| `pa` / `pb` | move the top of b to a / the top of a to b |
+| `ra` / `rb` / `rr` | rotate a / b / both (top goes to the bottom) |
+| `rra` / `rrb` / `rrr` | reverse rotate a / b / both (bottom goes to the top) |
 
 ## Usage
 
 ```bash
+make            # push_swap
+make bonus      # checker
 ./push_swap 4 67 3 87 10
+./push_swap "4 67 3" 87 10 | ./checker 4 67 3 87 10    # prints OK or KO
 ```
 
-Outputs the sequence of operations needed to sort the stack:
+Invalid input (non numbers, values outside `int`, duplicates, empty
+arguments) prints `Error` on stderr and exits with status 1. Already sorted
+input prints nothing.
 
-```
-pb
-ra
-ra
-pb
-rra
-...
-```
+## Algorithm
 
-### With checker (bonus)
+- The values are replaced by their rank (0 .. n-1). Only the order matters
+  and duplicates show up while ranking.
+- 2 to 5 numbers: push the smallest ones to `b`, sort the last three in place
+  (at most 2 operations) and push them back.
+- More than 5:
+  1. Push everything except the three biggest values to `b`. Values from the
+     lower half are rotated to the bottom of `b`, so `b` ends up roughly split
+     in two.
+  2. Sort the three values left in `a`.
+  3. For every element of `b`, find where it belongs in `a` and how many
+     rotations it takes to bring both to the top. There are four ways
+     (`ra`/`rra` combined with `rb`/`rrb`). When both go the same way they
+     share `rr`/`rrr`. Move the cheapest element and repeat until `b` is
+     empty.
+  4. Rotate `a` until the smallest value is on top.
 
-Pipe the operations into the checker to verify correctness:
+## Results
 
-```bash
-./push_swap 4 67 3 87 10 | ./checker/checker 4 67 3 87 10
-```
+Measured with 60 random inputs for each size:
 
-Output: `OK` (sorted) or `KO` (not sorted).
+| Numbers | Average ops | Worst ops | 42 limit for full score |
+|---------|-------------|-----------|-------------------------|
+| 3 | 1 | 2 | 3 |
+| 5 | 7 | 9 | 12 |
+| 100 | ~580 | 628 | 700 |
+| 500 | ~4550 | 4828 | 5500 |
 
-### Error handling
+## Files
 
-```bash
-./push_swap 1 2 abc     # Error
-./push_swap 1 2 2       # Error (duplicates)
-./push_swap 1 2 3       # (no output, already sorted)
-```
+| File | Purpose |
+|------|---------|
+| `main.c` | entry point, picks the small or large sort |
+| `parse.c` | splits and validates the arguments |
+| `stack.c` | builds the stacks, ranking, helpers |
+| `ops.c`, `ops_names.c` | the 11 operations, printing and parsing their names |
+| `sort_small.c` | 2 to 5 numbers |
+| `sort_large.c`, `cost.c` | the cost based algorithm |
+| `bonus/checker.c` | reads operations from stdin and checks the result |
 
-## Build
+## What I'd improve
 
-```bash
-make                # Compile push_swap
-make bonus          # Compile checker
-make clean          # Remove object files
-make fclean         # Remove objects and binaries
-make re             # Full rebuild
-```
-
-Compiled with `gcc -Wall -Wextra -Werror -g -O2`.
-
-## Architecture
-
-File                        | Purpose
-----------------------------|----------------------------------------------
-main.c                      | Entry point, argument parsing, dispatch by stack size
-stack_init.c                | Input validation, duplicate check, stack construction
-split.c                     | Custom ft_split for space-separated arguments
-tiny_sort.c                 | Sorting for 2, 3, and 5 elements
-push_swap_command.c         | Main algorithm: cost calculation and move orchestration
-push_swap_init.c            | Position, target, price, and cheapest node computation
-swap_command.c              | sa, sb, ss
-push_command.c              | pa, pb
-rotate_command.c            | ra, rb, rr
-reverse_rotate_command.c   | rra, rrb, rrr
-stack_utils.c               | Stack length, find smallest, find last node
-error_free.c                | Error handling, memory cleanup
-push_swap.h                 | Header: types, structs, prototypes
-checker/checker.c           | Bonus: reads operations from stdin and validates sort
-checker/get_next_line.c     | GNL implementation for reading operations
-checker/checker.h           | Checker header with BUFFER_SIZE and GNL prototypes
+- Rotating `a` and `b` at the same time during the first phase (some `ra` +
+  `rb` pairs could be `rr`).
+- The cost search is O(n²) per move; fine for 500 numbers, slow for much
+  bigger inputs.
 
 Author: ybahri (42)
